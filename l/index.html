@@ -1,0 +1,175 @@
+<!doctype html>
+<!--
+  The page of Wasl's https links: https://<base>/l#<wasl link>
+  (app/NOTES-deep-links.md; app/lib/features/deep_links/wasl_web_links.dart).
+
+  Published at https://wasl-app.github.io/l/ (GitHub Pages, organization wasl-app).
+
+  Everything after "#" is the Wasl link itself. Browsers never send the
+  fragment to the server, so the host never sees the code: this page reads
+  it in the visitor's browser only, checks it is a Wasl link of a known kind,
+  and offers to open it in Wasl (wasl://…). No trackers, no analytics, no
+  cookies, no external scripts, fonts or images; nothing is sent anywhere
+  (the Content-Security-Policy below forbids every request).
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>وصل · Wasl</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f5;
+    --card: #ffffff;
+    --text: #1b1f1d;
+    --muted: #5c6661;
+    --accent: #0f7a5c;
+    --on-accent: #ffffff;
+    --line: #dfe4e1;
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101412;
+      --card: #1a201d;
+      --text: #e8ece9;
+      --muted: #a3ada8;
+      --accent: #4fc79f;
+      --on-accent: #06261b;
+      --line: #2b332f;
+      --danger: #f2b8b5;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 440px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 28px 24px; }
+  .mark { font-size: 44px; font-weight: 700; color: var(--accent); text-align: center; margin: 0 0 4px; letter-spacing: 0; }
+  h1 { font-size: 20px; margin: 8px 0 4px; text-align: center; }
+  p { margin: 8px 0; color: var(--muted); }
+  .en { direction: ltr; text-align: left; }
+  .open {
+    display: block; width: 100%; margin: 20px 0 8px; padding: 14px 16px; border-radius: 14px; border: 0;
+    background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 700; text-align: center; text-decoration: none;
+  }
+  .copy {
+    display: block; width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line);
+    background: transparent; color: var(--text); font: inherit; cursor: pointer;
+  }
+  .link {
+    direction: ltr; text-align: left; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color: var(--muted);
+    word-break: break-all; max-height: 4.5em; overflow: hidden; margin-top: 12px;
+  }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
+  .bad { color: var(--danger); }
+  [hidden] { display: none !important; }
+  small { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <p class="mark" aria-hidden="true">وصل</p>
+
+    <section id="ok" hidden>
+      <h1 id="title">فتح الرابط في وصل</h1>
+      <p id="what"></p>
+      <a id="open" class="open" href="#">فتح في وصل</a>
+      <button id="copy" class="copy" type="button">نسخ الرابط</button>
+      <div id="shown" class="link"></div>
+      <hr>
+      <p>لا يُنفَّذ شيء بفتح الرابط وحده: يعرض وصل ما يشير إليه، ثم تقرر أنت (الانضمام، الإضافة، الموافقة).</p>
+      <p><strong>ليس وصل مثبتًا؟</strong> اطلبه ممن أرسل إليك الرابط أو من مشغّل شبكتك، ثبّته، ثم افتح هذا الرابط مرة أخرى. ويمكنك أيضًا نسخ الرابط ولصقه في وصل.</p>
+      <hr>
+      <div class="en" lang="en" dir="ltr">
+        <p><strong>Open this link in Wasl.</strong> Opening it does nothing by itself: Wasl shows what it points to, and you decide (join, add, approve).</p>
+        <p><strong>No Wasl yet?</strong> Ask whoever sent you the link, or your network's operator, for Wasl; install it, then open this link again — or copy the link and paste it into Wasl.</p>
+      </div>
+    </section>
+
+    <section id="none" hidden>
+      <h1>رابط غير صالح</h1>
+      <p class="bad">هذه الصفحة تفتح روابط وصل فقط، وهذا الرابط ناقص أو ليس رابط وصل.</p>
+      <div class="en" lang="en" dir="ltr">
+        <p class="bad">This page only opens Wasl links, and this one is incomplete or not a Wasl link.</p>
+      </div>
+    </section>
+
+    <hr>
+    <small>لا تُرسل هذه الصفحة شيئًا إلى أي مكان؛ الرابط يُقرأ في متصفحك فقط. · This page sends nothing anywhere; the link is read in your browser only.</small>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  // The kinds the app makes, as its parser reads them
+  // (app/lib/features/deep_links/incoming_link.dart).
+  var kinds = {
+    group:   { ar: 'رابط مجموعة: تُعرض المجموعة ثم «انضمام».', en: 'A group link.' },
+    channel: { ar: 'رابط قناة: تُعرض القناة ثم الانضمام.', en: 'A channel link.' },
+    live:    { ar: 'رابط بث مباشر.', en: 'A live broadcast link.' },
+    card:    { ar: 'رمز تواصل لشخص: «أضف» قبل أي شيء.', en: 'A contact card.' },
+    contact: { ar: 'رمز تواصل لشخص: «أضف» قبل أي شيء.', en: 'A contact code.' },
+    number:  { ar: 'رقم في وصل.', en: 'A Wasl number.' },
+    approve: { ar: 'جهاز جديد لك: يُعرض في «أجهزتي» لتوافق عليه أو ترفضه.', en: 'A new device of yours, to approve or refuse in Wasl.' },
+    join:    { ar: 'رابط تفعيل: يُفتح في شاشة الانضمام.', en: 'An activation link.' }
+  };
+  var maxLength = 6000;
+
+  function parse(hash) {
+    var f = (hash || '').replace(/^#/, '');
+    if (!f || f.length > maxLength + 32) return null;
+    if (f.indexOf('%') >= 0) {
+      try { f = decodeURIComponent(f); } catch (e) { return null; }
+    }
+    if (!/^wasl:\/\//i.test(f)) {
+      if (f.indexOf(':') >= 0) return null;
+      f = 'wasl://' + f;
+    }
+    if (f.length > maxLength || !/^[\x21-\x7e]+$/.test(f)) return null;
+    var m = /^wasl:\/\/([a-z]+)\/(.+)$/i.exec(f);
+    if (!m) return null;
+    var kind = m[1].toLowerCase();
+    var payload = m[2];
+    if (!Object.prototype.hasOwnProperty.call(kinds, kind)) return null;
+    if (kind === 'number') {
+      if (!/^(?:[0-9]{1,15}-)?[1-9][0-9]{9}$/.test(payload)) return null;
+    } else {
+      if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16) return null;
+      if ((kind === 'group' || kind === 'channel' || kind === 'live') && payload.length > 1100) return null;
+    }
+    return { kind: kind, link: 'wasl://' + kind + '/' + payload };
+  }
+
+  function show() {
+    var found = parse(location.hash);
+    document.getElementById('ok').hidden = !found;
+    document.getElementById('none').hidden = !!found;
+    if (!found) return;
+    var info = kinds[found.kind];
+    document.getElementById('what').textContent = info.ar + ' · ' + info.en;
+    document.getElementById('open').setAttribute('href', found.link);
+    document.getElementById('shown').textContent = found.link;
+    var copy = document.getElementById('copy');
+    copy.onclick = function () {
+      var done = function () { copy.textContent = 'نُسخ · Copied'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(found.link).then(done, function () {});
+      }
+    };
+  }
+
+  window.addEventListener('hashchange', show);
+  show();
+})();
+</script>
+</body>
+</html>
