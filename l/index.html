@@ -1,13 +1,20 @@
 <!doctype html>
 <!--
-  The page of Wasl's https links: https://<base>/l#<wasl link>
-  (app/NOTES-deep-links.md; app/lib/features/deep_links/wasl_web_links.dart).
+  The page of Wasl's https links: https://wasl-app.github.io/l#<wasl link>
+  (app/NOTES-deep-links.md; app/lib/features/deep_links/wasl_web_links.dart,
+  kWaslWebLinkBase = 'wasl-app.github.io').
 
-  Published at https://wasl-app.github.io/l/ (GitHub Pages, organization wasl-app).
+  PUBLISHED at https://wasl-app.github.io/l/ (repository wasl-app.github.io,
+  l/index.html), copied from this file: this is the source copy — change it
+  here, then copy it there. Beside it, .well-known/assetlinks.json (Android
+  App Links: the release key's SHA-256) goes to
+  https://wasl-app.github.io/.well-known/assetlinks.json.
 
   Everything after "#" is the Wasl link itself. Browsers never send the
   fragment to the server, so the host never sees the code: this page reads
-  it in the visitor's browser only, checks it is a Wasl link of a known kind,
+  it in the visitor's browser only, checks it is a public group, channel or
+  live link (never an approval, an activation link, a contact card or a
+  number — those never go through this page),
   and offers to open it in Wasl (wasl://…). No trackers, no analytics, no
   cookies, no external scripts, fonts or images; nothing is sent anywhere
   (the Content-Security-Policy below forbids every request).
@@ -86,20 +93,20 @@
       <button id="copy" class="copy" type="button">نسخ الرابط</button>
       <div id="shown" class="link"></div>
       <hr>
-      <p>لا يُنفَّذ شيء بفتح الرابط وحده: يعرض وصل ما يشير إليه، ثم تقرر أنت (الانضمام، الإضافة، الموافقة).</p>
+      <p>لا يُنفَّذ شيء بفتح الرابط وحده: يعرض وصل ما يشير إليه، ثم تقرر أنت الانضمام، وتسري قواعد المجموعة أو القناة (موافقة المشرفين وغيرها).</p>
       <p><strong>ليس وصل مثبتًا؟</strong> اطلبه ممن أرسل إليك الرابط أو من مشغّل شبكتك، ثبّته، ثم افتح هذا الرابط مرة أخرى. ويمكنك أيضًا نسخ الرابط ولصقه في وصل.</p>
       <hr>
       <div class="en" lang="en" dir="ltr">
-        <p><strong>Open this link in Wasl.</strong> Opening it does nothing by itself: Wasl shows what it points to, and you decide (join, add, approve).</p>
+        <p><strong>Open this link in Wasl.</strong> Opening it does nothing by itself: Wasl shows what it points to, and you decide whether to join; the group's or channel's own rules (admins' approval and the rest) still apply.</p>
         <p><strong>No Wasl yet?</strong> Ask whoever sent you the link, or your network's operator, for Wasl; install it, then open this link again — or copy the link and paste it into Wasl.</p>
       </div>
     </section>
 
     <section id="none" hidden>
       <h1>رابط غير صالح</h1>
-      <p class="bad">هذه الصفحة تفتح روابط وصل فقط، وهذا الرابط ناقص أو ليس رابط وصل.</p>
+      <p class="bad">هذه الصفحة تفتح روابط المجموعات والقنوات والبث العامة في وصل فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
       <div class="en" lang="en" dir="ltr">
-        <p class="bad">This page only opens Wasl links, and this one is incomplete or not a Wasl link.</p>
+        <p class="bad">This page only opens public Wasl group, channel and broadcast links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
       </div>
     </section>
 
@@ -115,14 +122,13 @@
   var kinds = {
     group:   { ar: 'رابط مجموعة: تُعرض المجموعة ثم «انضمام».', en: 'A group link.' },
     channel: { ar: 'رابط قناة: تُعرض القناة ثم الانضمام.', en: 'A channel link.' },
-    live:    { ar: 'رابط بث مباشر.', en: 'A live broadcast link.' },
-    card:    { ar: 'رمز تواصل لشخص: «أضف» قبل أي شيء.', en: 'A contact card.' },
-    contact: { ar: 'رمز تواصل لشخص: «أضف» قبل أي شيء.', en: 'A contact code.' },
-    number:  { ar: 'رقم في وصل.', en: 'A Wasl number.' },
-    approve: { ar: 'جهاز جديد لك: يُعرض في «أجهزتي» لتوافق عليه أو ترفضه.', en: 'A new device of yours, to approve or refuse in Wasl.' },
-    join:    { ar: 'رابط تفعيل: يُفتح في شاشة الانضمام.', en: 'An activation link.' }
+    live:    { ar: 'رابط بث مباشر.', en: 'A live broadcast link.' }
   };
-  var maxLength = 6000;
+  // Only links meant for anyone come through this page: a public group or
+  // channel, a broadcast open to anyone with the link. Personal links
+  // (contact cards, numbers) and secrets (device approvals, activation
+  // links) are shared inside Wasl only, never here.
+  var maxLength = 1200;
 
   function parse(hash) {
     var f = (hash || '').replace(/^#/, '');
@@ -140,12 +146,7 @@
     var kind = m[1].toLowerCase();
     var payload = m[2];
     if (!Object.prototype.hasOwnProperty.call(kinds, kind)) return null;
-    if (kind === 'number') {
-      if (!/^(?:[0-9]{1,15}-)?[1-9][0-9]{9}$/.test(payload)) return null;
-    } else {
-      if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16) return null;
-      if ((kind === 'group' || kind === 'channel' || kind === 'live') && payload.length > 1100) return null;
-    }
+    if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16 || payload.length > 1100) return null;
     return { kind: kind, link: 'wasl://' + kind + '/' + payload };
   }
 
