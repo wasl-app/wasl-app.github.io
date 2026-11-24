@@ -12,10 +12,31 @@
 
   Everything after "#" is the Wasl link itself. Browsers never send the
   fragment to the server, so the host never sees the code: this page reads
-  it in the visitor's browser only, checks it is a public group, channel or
-  live link (never an approval, an activation link, a contact card or a
-  number — those never go through this page),
-  and offers to open it in Wasl (wasl://…). No trackers, no analytics, no
+  it in the visitor's browser only, checks it is one of the kinds below,
+  and offers to open it in Wasl (wasl://…).
+
+  ACCEPTED KINDS (app: kWebLinkKinds in wasl_web_links.dart — keep the two
+  in step):
+    group/<base64url>     a public group   (the owner, 20 Nov 02:47)
+    channel/<base64url>   a public channel
+    live/<base64url>      a broadcast open to anyone with the link
+    number/<number>       an account's number, 001-5523881402 or
+                          5523881402 (the owner, 20 Nov 17:35: made by
+                          «مشاركة رابط الحساب»; opens the profile or the
+                          chat as wasl://number/ does — adding and messaging
+                          still obey the person's privacy and message
+                          requests). Since 20 Nov 18:24 it is THE one
+                          link of «رقم حسابي», the full number, the same
+                          for everyone: it also adds from another network
+                          of the same publisher when both networks allow it
+    @<handle>             a gold-star account's handle (P2P §R43, the owner,
+                          24 Nov 06:10): opened in Wasl as wasl://handle/,
+                          where the publisher-signed record decides which
+                          account it is — this page decides nothing
+  NEVER: approve/ (a device approval), join/ (an activation code) — secrets
+  — nor card/ or contact/ (contact cards, they carry keys; the app makes
+  none any more but still reads old ones inside Wasl): refused here as
+  any other kind, and the app refuses approve/join in this form outright. No trackers, no analytics, no
   cookies, no external scripts or fonts; only its own logo (og.png for link previews, icon.png); nothing is sent anywhere
   (the Content-Security-Policy below forbids every request).
 -->
@@ -30,7 +51,7 @@
 <link rel="icon" type="image/png" href="/l/icon.png">
 <meta property="og:site_name" content="وصل · Wasl">
 <meta property="og:title" content="افتح في وصل">
-<meta property="og:description" content="رابط مجموعة أو قناة أو بث مباشر في تطبيق وصل.">
+<meta property="og:description" content="رابط مجموعة أو قناة أو بث مباشر أو حساب في تطبيق وصل.">
 <meta property="og:image" content="https://wasl-app.github.io/l/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -113,9 +134,9 @@
 
     <section id="none" hidden>
       <h1>رابط غير صالح</h1>
-      <p class="bad">هذه الصفحة تفتح روابط المجموعات والقنوات والبث العامة في وصل فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
+      <p class="bad">هذه الصفحة تفتح في وصل روابط المجموعات والقنوات والبث العامة وروابط الحسابات فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
       <div class="en" lang="en" dir="ltr">
-        <p class="bad">This page only opens public Wasl group, channel and broadcast links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
+        <p class="bad">This page only opens public Wasl group, channel and broadcast links and account links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
       </div>
     </section>
 
@@ -131,12 +152,23 @@
   var kinds = {
     group:   { ar: 'رابط مجموعة: تُعرض المجموعة ثم «انضمام».', en: 'A group link.' },
     channel: { ar: 'رابط قناة: تُعرض القناة ثم الانضمام.', en: 'A channel link.' },
-    live:    { ar: 'رابط بث مباشر.', en: 'A live broadcast link.' }
+    live:    { ar: 'رابط بث مباشر.', en: 'A live broadcast link.' },
+    number:  { ar: 'رابط حساب: يُعرض ملف صاحبه أو المحادثة معه، وتسري إعدادات خصوصيته وطلبات المراسلة.',
+               en: 'An account link: Wasl shows the person\'s profile or your chat with them; their privacy settings and message requests still apply.' },
+    handle:  { ar: 'معرّف حساب موثَّق: يتحقق وصل من سجل الناشر الموقَّع ثم يعرض الحساب.',
+               en: 'A verified account\'s handle: Wasl checks the publisher-signed record, then shows the account.' }
   };
+  // A handle (app: Handles.normalise in wasl_core): 3-30 of a-z, 0-9 and _,
+  // starting with a letter.
+  var handlePayload = /^[a-z][a-z0-9_]{2,29}$/;
   // Only links meant for anyone come through this page: a public group or
-  // channel, a broadcast open to anyone with the link. Personal links
-  // (contact cards, numbers) and secrets (device approvals, activation
-  // links) are shared inside Wasl only, never here.
+  // channel, a broadcast open to anyone with the link, an account's number
+  // (shared with «مشاركة رابط الحساب»). Contact cards (they carry keys) and
+  // secrets (device approvals, activation links) are shared inside Wasl
+  // only, never here.
+  // A number: an optional prefix «مفتاح الشبكة» of 1-15 digits and a dash,
+  // then ten digits, the first 1-9 (app: numbers/number_text.dart).
+  var numberPayload = /^(?:[0-9]{1,15}-)?[1-9][0-9]{9}$/;
   var maxLength = 1200;
 
   function parse(hash) {
@@ -145,6 +177,7 @@
     if (f.indexOf('%') >= 0) {
       try { f = decodeURIComponent(f); } catch (e) { return null; }
     }
+    if (f.charAt(0) === '@') f = 'handle/' + f.substring(1).toLowerCase();
     if (!/^wasl:\/\//i.test(f)) {
       if (f.indexOf(':') >= 0) return null;
       f = 'wasl://' + f;
@@ -155,7 +188,13 @@
     var kind = m[1].toLowerCase();
     var payload = m[2];
     if (!Object.prototype.hasOwnProperty.call(kinds, kind)) return null;
-    if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16 || payload.length > 1100) return null;
+    if (kind === 'number') {
+      if (!numberPayload.test(payload)) return null;
+    } else if (kind === 'handle') {
+      if (!handlePayload.test(payload)) return null;
+    } else if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16 || payload.length > 1100) {
+      return null;
+    }
     return { kind: kind, link: 'wasl://' + kind + '/' + payload };
   }
 
