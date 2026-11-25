@@ -33,14 +33,18 @@
                           24 Nov 06:10): opened in Wasl as wasl://handle/,
                           where the publisher-signed record decides which
                           account it is — this page decides nothing
-    c/@<handle>           a PUBLIC CHANNEL's handle (P2P §8.8 "Channel
-                          handles", the owner, 25 Nov 07:06): also
-                          wasl://c/@<handle>; Latin or Arabic letters,
-                          digits, _ and . (5-32; percent-encoded or not).
-                          Opened in Wasl as wasl://c/@<handle>, where the
-                          DHT, the channel's own signed records and the
-                          device's pin decide which channel it is — this
-                          page decides nothing
+    c/@<name>_<code>      a PUBLIC CHANNEL's handle (P2P §8.8 "Channel
+                          handles", "Self-certifying handles"; the owner,
+                          25 Nov 23:31-23:47): also wasl://c/@<name>_<code>;
+                          the name Latin or Arabic letters, digits, _ and .
+                          (5-32; percent-encoded or not), the code the six
+                          characters after the last _ (0-9 a-z without
+                          i l o u) — derived from the channel's own key.
+                          A publisher-verified channel's clean c/@<name>
+                          too. Opened in Wasl as wasl://c/@…, where only
+                          the channel whose key gives that code (and whose
+                          signed records name it) is taken — this page
+                          decides nothing
   NEVER: approve/ (a device approval), join/ (an activation code) — secrets
   — nor card/ or contact/ (contact cards, they carry keys; the app makes
   none any more but still reads old ones inside Wasl): refused here as
@@ -165,16 +169,45 @@
                en: 'An account link: Wasl shows the person\'s profile or your chat with them; their privacy settings and message requests still apply.' },
     handle:  { ar: 'معرّف حساب موثَّق: يتحقق وصل من سجل الناشر الموقَّع ثم يعرض الحساب.',
                en: 'A verified account\'s handle: Wasl checks the publisher-signed record, then shows the account.' },
-    c:       { ar: 'معرّف قناة عامة: يبحث وصل عن القناة في الشبكة ويتحقق من سجلاتها الموقَّعة، ثم تُعرض القناة ثم الاشتراك.',
-               en: 'A public channel\'s handle: Wasl finds the channel on the network and checks its signed records, then shows it.' }
+    c:       { ar: 'معرّف قناة عامة: الاسم ثم رمز القناة. يبحث وصل عن القناة في الشبكة ولا يقبل إلا القناة التي يطابق مفتاحُها الرمز وتحمل سجلاتها الموقَّعة المعرّف، ثم تُعرض القناة ثم الاشتراك.',
+               en: 'A public channel\'s handle: the name, then the channel\'s code. Wasl finds the channel on the network and takes only the one whose key gives that code and whose signed records name it, then shows it.' }
   };
   // A public channel's handle (app: ChannelHandles.check in wasl_core):
-  // 5-32 of Latin letters, digits, _ and . — or Arabic letters, digits, _
-  // and . — starting with a letter, a separator neither last nor doubled.
-  // Lower case, Arabic-Indic digits as ASCII, harakat and tatweel dropped;
-  // a hidden or direction character refuses it. Reserved words are the
-  // app's to refuse.
+  // name_code — the code the six characters after the last _ of the code
+  // alphabet (0-9 a-z without i l o u, any case); the name 5-32 of Latin
+  // letters, digits, _ and . — or Arabic letters, digits, _ and . —
+  // starting with a letter, a separator neither last nor doubled, never
+  // ending code-like itself. Without a code: a verified channel's clean
+  // name (the same rules). Lower case, Arabic-Indic digits as ASCII,
+  // harakat and tatweel dropped; a hidden or direction character refuses
+  // it. Reserved words are the app's to refuse.
+  var codeAlphabet = '0123456789abcdefghjkmnpqrstvwxyz';
+  function codeOf(t) {
+    if (t.length !== 6) return null;
+    var out = '';
+    for (var i = 0; i < 6; i++) {
+      var r = t.charCodeAt(i);
+      if (r >= 0x41 && r <= 0x5A) r += 0x20;
+      if (r >= 0x0660 && r <= 0x0669) r = 0x30 + r - 0x0660;
+      if (r >= 0x06F0 && r <= 0x06F9) r = 0x30 + r - 0x06F0;
+      var c = String.fromCharCode(r);
+      if (codeAlphabet.indexOf(c) < 0) return null;
+      out += c;
+    }
+    return out;
+  }
+  function codeShaped(h) {
+    var i = h.lastIndexOf('_');
+    return i > 0 && codeOf(h.substring(i + 1)) !== null;
+  }
   function channelHandle(raw) {
+    var i = raw.lastIndexOf('_');
+    var code = i > 0 ? codeOf(raw.substring(i + 1)) : null;
+    var name = channelName(code === null ? raw : raw.substring(0, i));
+    if (!name) return null;
+    return code === null ? name : name + '_' + code;
+  }
+  function channelName(raw) {
     var t = raw, out = '', latin = false, arabic = false, n = 0;
     for (var i = 0; i < t.length; i++) {
       var r = t.charCodeAt(i);
@@ -197,7 +230,7 @@
       out += String.fromCharCode(r);
       n++;
     }
-    if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out)) return null;
+    if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out) || codeShaped(out)) return null;
     return out;
   }
   // A handle (app: Handles.normalise in wasl_core): 3-30 of a-z, 0-9 and _,
