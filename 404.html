@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>وصل</title>
+<script>
+// Short public links: /@name (a gold-star account) and /c/@name (a public
+// channel) open the link page with the same fragment. Nothing is sent
+// anywhere: the name moves from the path into the #fragment, which the
+// browser never sends to a server.
+(function () {
+  var p = location.pathname;
+  try { p = decodeURIComponent(p); } catch (e) {}
+  var m = p.match(/^\/(c\/)?@([^\/?#]{1,64})\/?$/);
+  if (m) {
+    location.replace('/l/#' + (m[1] ? 'c/' : '') + '@' + encodeURIComponent(m[2]));
+  } else {
+    location.replace('/');
+  }
+})();
+</script>
+</head>
+<body></body>
+</html>
