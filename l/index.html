@@ -33,6 +33,14 @@
                           24 Nov 06:10): opened in Wasl as wasl://handle/,
                           where the publisher-signed record decides which
                           account it is — this page decides nothing
+    c/@<handle>           a PUBLIC CHANNEL's handle (P2P §8.8 "Channel
+                          handles", the owner, 25 Nov 07:06): also
+                          wasl://c/@<handle>; Latin or Arabic letters,
+                          digits, _ and . (5-32; percent-encoded or not).
+                          Opened in Wasl as wasl://c/@<handle>, where the
+                          DHT, the channel's own signed records and the
+                          device's pin decide which channel it is — this
+                          page decides nothing
   NEVER: approve/ (a device approval), join/ (an activation code) — secrets
   — nor card/ or contact/ (contact cards, they carry keys; the app makes
   none any more but still reads old ones inside Wasl): refused here as
@@ -51,7 +59,7 @@
 <link rel="icon" type="image/png" href="/l/icon.png">
 <meta property="og:site_name" content="وصل · Wasl">
 <meta property="og:title" content="افتح في وصل">
-<meta property="og:description" content="رابط مجموعة أو قناة أو بث مباشر أو حساب في تطبيق وصل.">
+<meta property="og:description" content="رابط مجموعة أو قناة أو معرّف قناة أو بث مباشر أو حساب في تطبيق وصل.">
 <meta property="og:image" content="https://wasl-app.github.io/l/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -134,9 +142,9 @@
 
     <section id="none" hidden>
       <h1>رابط غير صالح</h1>
-      <p class="bad">هذه الصفحة تفتح في وصل روابط المجموعات والقنوات والبث العامة وروابط الحسابات فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
+      <p class="bad">هذه الصفحة تفتح في وصل روابط المجموعات والقنوات والبث العامة ومعرّفات القنوات العامة وروابط الحسابات فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
       <div class="en" lang="en" dir="ltr">
-        <p class="bad">This page only opens public Wasl group, channel and broadcast links and account links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
+        <p class="bad">This page only opens public Wasl group, channel and broadcast links, public channels' handles and account links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
       </div>
     </section>
 
@@ -156,8 +164,42 @@
     number:  { ar: 'رابط حساب: يُعرض ملف صاحبه أو المحادثة معه، وتسري إعدادات خصوصيته وطلبات المراسلة.',
                en: 'An account link: Wasl shows the person\'s profile or your chat with them; their privacy settings and message requests still apply.' },
     handle:  { ar: 'معرّف حساب موثَّق: يتحقق وصل من سجل الناشر الموقَّع ثم يعرض الحساب.',
-               en: 'A verified account\'s handle: Wasl checks the publisher-signed record, then shows the account.' }
+               en: 'A verified account\'s handle: Wasl checks the publisher-signed record, then shows the account.' },
+    c:       { ar: 'معرّف قناة عامة: يبحث وصل عن القناة في الشبكة ويتحقق من سجلاتها الموقَّعة، ثم تُعرض القناة ثم الاشتراك.',
+               en: 'A public channel\'s handle: Wasl finds the channel on the network and checks its signed records, then shows it.' }
   };
+  // A public channel's handle (app: ChannelHandles.check in wasl_core):
+  // 5-32 of Latin letters, digits, _ and . — or Arabic letters, digits, _
+  // and . — starting with a letter, a separator neither last nor doubled.
+  // Lower case, Arabic-Indic digits as ASCII, harakat and tatweel dropped;
+  // a hidden or direction character refuses it. Reserved words are the
+  // app's to refuse.
+  function channelHandle(raw) {
+    var t = raw, out = '', latin = false, arabic = false, n = 0;
+    for (var i = 0; i < t.length; i++) {
+      var r = t.charCodeAt(i);
+      if (r >= 0xD800 && r <= 0xDFFF) return null;
+      if (r >= 0x41 && r <= 0x5A) r += 0x20;
+      if (r >= 0x0660 && r <= 0x0669) r = 0x30 + r - 0x0660;
+      if (r >= 0x06F0 && r <= 0x06F9) r = 0x30 + r - 0x06F0;
+      if (r === 0x06A9) r = 0x0643;
+      if (r === 0x06CC) r = 0x064A;
+      if ((r >= 0x064B && r <= 0x065F) || r === 0x0670 || r === 0x0640) continue;
+      var isLatin = r >= 0x61 && r <= 0x7A;
+      var isArabic = (r >= 0x0621 && r <= 0x063A) || (r >= 0x0641 && r <= 0x064A);
+      var isDigit = r >= 0x30 && r <= 0x39;
+      var isSep = r === 0x5F || r === 0x2E;
+      if (!isLatin && !isArabic && !isDigit && !isSep) return null;
+      if (n === 0 && !isLatin && !isArabic) return null;
+      if (isSep && /[._]$/.test(out)) return null;
+      if (isLatin) latin = true;
+      if (isArabic) arabic = true;
+      out += String.fromCharCode(r);
+      n++;
+    }
+    if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out)) return null;
+    return out;
+  }
   // A handle (app: Handles.normalise in wasl_core): 3-30 of a-z, 0-9 and _,
   // starting with a letter.
   var handlePayload = /^[a-z][a-z0-9_]{2,29}$/;
@@ -178,6 +220,13 @@
       try { f = decodeURIComponent(f); } catch (e) { return null; }
     }
     if (f.charAt(0) === '@') f = 'handle/' + f.substring(1).toLowerCase();
+    // A public channel's handle: Arabic letters may be in it.
+    var ch = /^(?:wasl:\/\/)?c\/@(.+)$/i.exec(f);
+    if (ch) {
+      var h = channelHandle(ch[1]);
+      if (!h) return null;
+      return { kind: 'c', link: 'wasl://c/@' + encodeURIComponent(h), shown: 'wasl://c/@' + h };
+    }
     if (!/^wasl:\/\//i.test(f)) {
       if (f.indexOf(':') >= 0) return null;
       f = 'wasl://' + f;
@@ -195,6 +244,7 @@
     } else if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16 || payload.length > 1100) {
       return null;
     }
+    if (kind === 'c') return null;
     return { kind: kind, link: 'wasl://' + kind + '/' + payload };
   }
 
@@ -206,7 +256,7 @@
     var info = kinds[found.kind];
     document.getElementById('what').textContent = info.ar + ' · ' + info.en;
     document.getElementById('open').setAttribute('href', found.link);
-    document.getElementById('shown').textContent = found.link;
+    document.getElementById('shown').textContent = found.shown || found.link;
     var copy = document.getElementById('copy');
     copy.onclick = function () {
       var done = function () { copy.textContent = 'نُسخ · Copied'; };
