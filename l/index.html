@@ -180,7 +180,9 @@
   // o → 0, i l → 1); the name 5-32 of Latin letters, digits, _ and . — or
   // Arabic letters, digits, _ and . — starting with a letter, a separator
   // neither last nor doubled, never = (any word may follow a separator:
-  // sports_weather). Without = : a verified channel's clean
+  // sports_weather) — except a segment that reads as a code (seven code
+  // characters, a digit and a letter among them: akhbar.k3x9qa7, the
+  // thirteenth review L2). Without = : a verified channel's clean
   // name (the same rules). Lower case, Arabic-Indic digits as ASCII,
   // harakat and tatweel dropped; a hidden or direction character refuses
   // it. Reserved words are the app's to refuse.
@@ -236,7 +238,25 @@
       n++;
     }
     if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out)) return null;
+    if (codeShaped(out)) return null;
     return out;
+  }
+  function codeShaped(h) {
+    var parts = h.split(/[._]/);
+    for (var i = 0; i < parts.length; i++) {
+      var w = parts[i];
+      if (w.length === 7 && codeOf(w) !== null && /[0-9]/.test(w) && /[a-z]/.test(w)) return true;
+    }
+    return false;
+  }
+  // As it is shown (the thirteenth review L3): one left-to-right run, the
+  // name in its own isolate (FSI…PDI), =code in a left-to-right one
+  // (LRI…PDI) — an Arabic name never takes the code's leading digits.
+  function shownHandle(h) {
+    var i = h.indexOf('=');
+    var name = i < 0 ? h : h.substring(0, i);
+    var code = i < 0 ? '' : '\u2066' + h.substring(i) + '\u2069';
+    return '\u2066wasl://c/@\u2068' + name + '\u2069' + code + '\u2069';
   }
   // A handle (app: Handles.normalise in wasl_core): 3-30 of a-z, 0-9 and _,
   // starting with a letter.
@@ -256,6 +276,8 @@
     if (!f || f.length > maxLength + 32) return null;
     if (f.indexOf('%') >= 0) {
       try { f = decodeURIComponent(f); } catch (e) { return null; }
+      // Decoded once only (the thirteenth review L6): a % left over refuses it.
+      if (f.indexOf('%') >= 0) return null;
     }
     if (f.charAt(0) === '@') f = 'handle/' + f.substring(1).toLowerCase();
     // A public channel's handle: Arabic letters may be in it.
@@ -263,7 +285,7 @@
     if (ch) {
       var h = channelHandle(ch[1]);
       if (!h) return null;
-      return { kind: 'c', link: handleLink(h), shown: 'wasl://c/@' + h };
+      return { kind: 'c', link: handleLink(h), shown: shownHandle(h) };
     }
     if (!/^wasl:\/\//i.test(f)) {
       if (f.indexOf(':') >= 0) return null;
