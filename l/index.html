@@ -33,12 +33,13 @@
                           24 Nov 06:10): opened in Wasl as wasl://handle/,
                           where the publisher-signed record decides which
                           account it is — this page decides nothing
-    c/@<name>_<code>      a PUBLIC CHANNEL's handle (P2P §8.8 "Channel
+    c/@<name>=<code>      a PUBLIC CHANNEL's handle (P2P §8.8 "Channel
                           handles", "Self-certifying handles"; the owner,
-                          25 Nov 23:31-23:47): also wasl://c/@<name>_<code>;
+                          25 Nov 23:31-23:47, 26 Nov 01:23): also
+                          wasl://c/@<name>=<code> (c/@akhbar=7k2qmzt);
                           the name Latin or Arabic letters, digits, _ and .
-                          (5-32; percent-encoded or not), the code the seven
-                          characters after the last _ (0-9 a-z without
+                          (5-32; percent-encoded or not; never =), the code
+                          the seven characters after the one = (0-9 a-z without
                           i l o u; o, i, l read as 0, 1, 1) — derived from
                           the channel's own key and the name (26 Nov).
                           A publisher-verified channel's clean c/@<name>
@@ -174,12 +175,12 @@
                en: 'A public channel\'s handle: the name, then the channel\'s code. Wasl finds the channel on the network and takes only the one whose key gives that code and whose signed records name it, then shows it.' }
   };
   // A public channel's handle (app: ChannelHandles.check in wasl_core):
-  // name_code — the code the seven characters after the last _ of the code
-  // alphabet (0-9 a-z without i l o u, any case; Crockford's aliases o → 0,
-  // i l → 1); the name 5-32 of Latin letters, digits, _ and . — or Arabic
-  // letters, digits, _ and . — starting with a letter, a separator neither
-  // last nor doubled, never holding a code-like segment after a _ or .
-  // anywhere (twelfth review M2). Without a code: a verified channel's clean
+  // name=code — exactly one =, the code the seven characters after it of the
+  // code alphabet (0-9 a-z without i l o u, any case; Crockford's aliases
+  // o → 0, i l → 1); the name 5-32 of Latin letters, digits, _ and . — or
+  // Arabic letters, digits, _ and . — starting with a letter, a separator
+  // neither last nor doubled, never = (any word may follow a separator:
+  // sports_weather). Without = : a verified channel's clean
   // name (the same rules). Lower case, Arabic-Indic digits as ASCII,
   // harakat and tatweel dropped; a hidden or direction character refuses
   // it. Reserved words are the app's to refuse.
@@ -200,17 +201,16 @@
     }
     return out;
   }
-  function codeShaped(h) {
-    var parts = h.split(/[._]/);
-    for (var i = 1; i < parts.length; i++) if (codeOf(parts[i]) !== null) return true;
-    return false;
-  }
   function channelHandle(raw) {
-    var i = raw.lastIndexOf('_');
-    var code = i > 0 ? codeOf(raw.substring(i + 1)) : null;
-    var name = channelName(code === null ? raw : raw.substring(0, i));
-    if (!name) return null;
-    return code === null ? name : name + '_' + code;
+    var i = raw.indexOf('=');
+    if (i < 0) return channelName(raw);
+    var name = channelName(raw.substring(0, i));
+    var code = codeOf(raw.substring(i + 1));
+    return name && code !== null ? name + '=' + code : null;
+  }
+  // The app's link: the name percent-encoded, the = kept as is.
+  function handleLink(h) {
+    return 'wasl://c/@' + h.split('=').map(encodeURIComponent).join('=');
   }
   function channelName(raw) {
     var t = raw, out = '', latin = false, arabic = false, n = 0;
@@ -235,7 +235,7 @@
       out += String.fromCharCode(r);
       n++;
     }
-    if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out) || codeShaped(out)) return null;
+    if ((latin && arabic) || n < 5 || n > 32 || /[._]$/.test(out)) return null;
     return out;
   }
   // A handle (app: Handles.normalise in wasl_core): 3-30 of a-z, 0-9 and _,
@@ -263,7 +263,7 @@
     if (ch) {
       var h = channelHandle(ch[1]);
       if (!h) return null;
-      return { kind: 'c', link: 'wasl://c/@' + encodeURIComponent(h), shown: 'wasl://c/@' + h };
+      return { kind: 'c', link: handleLink(h), shown: 'wasl://c/@' + h };
     }
     if (!/^wasl:\/\//i.test(f)) {
       if (f.indexOf(':') >= 0) return null;

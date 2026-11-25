@@ -5,8 +5,8 @@
 <meta name="robots" content="noindex">
 <title>وصل</title>
 <script>
-// Short public links: /@name (a gold-star account) and /c/@name (a public
-// channel) open the link page with the same fragment. Nothing is sent
+// Short public links: /@name (a gold-star account) and /c/@name=code (a
+// public channel; /c/@name for a verified one's clean name) open the link page with the same fragment. Nothing is sent
 // anywhere: the name moves from the path into the #fragment, which the
 // browser never sends to a server.
 (function () {
@@ -14,7 +14,8 @@
   try { p = decodeURIComponent(p); } catch (e) {}
   var m = p.match(/^\/(c\/)?@([^\/?#]{1,64})\/?$/);
   if (m) {
-    location.replace('/l/#' + (m[1] ? 'c/' : '') + '@' + encodeURIComponent(m[2]));
+    // The channel handle's = is kept as is (`#c/@akhbar=7k2qmzt`).
+    location.replace('/l/#' + (m[1] ? 'c/' : '') + '@' + encodeURIComponent(m[2]).replace(/%3D/gi, '='));
   } else {
     location.replace('/');
   }
