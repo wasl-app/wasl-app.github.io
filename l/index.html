@@ -20,6 +20,10 @@
     group/<base64url>     a public group   (the owner, 20 Nov 02:47)
     channel/<base64url>   a public channel
     live/<base64url>      a broadcast open to anyone with the link
+    s/<tool>[/<n>[/<n>]]  a service's link (the owner, 28 Nov 07:04): an ayah
+                          (s/quran/2/255), a hadith (s/hadith/<id>), a
+                          book's page (s/books/<book>/<page>) or the service
+                          (s/ocr …); the app checks each number again
     number/<number>       an account's number, 001-5523881402 or
                           5523881402 (the owner, 20 Nov 17:35: made by
                           «مشاركة رابط الحساب»; opens the profile or the
@@ -148,9 +152,9 @@
 
     <section id="none" hidden>
       <h1>رابط غير صالح</h1>
-      <p class="bad">هذه الصفحة تفتح في وصل روابط المجموعات والقنوات والبث العامة ومعرّفات القنوات العامة وروابط الحسابات فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
+      <p class="bad">هذه الصفحة تفتح في وصل روابط المجموعات والقنوات والبث العامة ومعرّفات القنوات العامة وروابط الحسابات وروابط الخدمات فقط، وهذا الرابط ناقص أو ليس منها. روابط الموافقة على الأجهزة والتفعيل وبطاقات التواصل لا تُفتح من هنا أبدًا.</p>
       <div class="en" lang="en" dir="ltr">
-        <p class="bad">This page only opens public Wasl group, channel and broadcast links, public channels' handles and account links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
+        <p class="bad">This page only opens public Wasl group, channel and broadcast links, public channels' handles, account links and service links, and this one is incomplete or not one of them. Device approvals, activation links and contact cards are never opened from here.</p>
       </div>
     </section>
 
@@ -171,6 +175,8 @@
                en: 'An account link: Wasl shows the person\'s profile or your chat with them; their privacy settings and message requests still apply.' },
     handle:  { ar: 'معرّف حساب موثَّق: يتحقق وصل من سجل الناشر الموقَّع ثم يعرض الحساب.',
                en: 'A verified account\'s handle: Wasl checks the publisher-signed record, then shows the account.' },
+    s:       { ar: 'رابط خدمة في وصل: آية، أو حديث، أو صفحة من كتاب، أو الخدمة نفسها. لا يُطلب شيء من الشبكة قبل تنبيه خصوصية الخدمة.',
+               en: 'A link to a Wasl service: an ayah, a hadith, a book\'s page, or the service itself. Nothing is asked of the network before the service\'s privacy note.' },
     c:       { ar: 'معرّف قناة عامة: الاسم ثم رمز القناة. يبحث وصل عن القناة في الشبكة ولا يقبل إلا القناة التي يطابق مفتاحُها الرمز وتحمل سجلاتها الموقَّعة المعرّف، ثم تُعرض القناة ثم الاشتراك.',
                en: 'A public channel\'s handle: the name, then the channel\'s code. Wasl finds the channel on the network and takes only the one whose key gives that code and whose signed records name it, then shows it.' }
   };
@@ -269,6 +275,9 @@
   // A number: an optional prefix «مفتاح الشبكة» of 1-15 digits and a dash,
   // then ten digits, the first 1-9 (app: numbers/number_text.dart).
   var numberPayload = /^(?:[0-9]{1,15}-)?[1-9][0-9]{9}$/;
+  // A service's link (app: services/service_links.dart): its tool, then
+  // up to two numbers — quran/2/255, hadith/113848, books/8381/2218, ocr.
+  var servicePayload = /^(?:quran|hadith|books|ocr|speech|background|video|pdf)(?:\/[1-9][0-9]{0,9}){0,2}$/;
   var maxLength = 1200;
 
   function parse(hash) {
@@ -299,6 +308,8 @@
     if (!Object.prototype.hasOwnProperty.call(kinds, kind)) return null;
     if (kind === 'number') {
       if (!numberPayload.test(payload)) return null;
+    } else if (kind === 's') {
+      if (!servicePayload.test(payload)) return null;
     } else if (kind === 'handle') {
       if (!handlePayload.test(payload)) return null;
     } else if (!/^[A-Za-z0-9_\-]+={0,2}$/.test(payload) || payload.length < 16 || payload.length > 1100) {
