@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex">
 <title>وصل</title>
 <script>
-// Short public links: /@name (a gold-star account) and /c/@name=code (a
+// Short public links: /s/<tool>[/<n>[/<n>]] (a service's link), /@name (a gold-star account) and /c/@name=code (a
 // public channel; /c/@name for a verified one's clean name) open the link page with the same fragment. Nothing is sent
 // anywhere: the name moves from the path into the #fragment, which the
 // browser never sends to a server.
@@ -13,7 +13,11 @@
   var p = location.pathname;
   try { p = decodeURIComponent(p); } catch (e) {}
   var m = p.match(/^\/(c\/)?@([^\/?#]{1,64})\/?$/);
-  if (m) {
+  // A service's link (the owner, 28 Nov 2026): /s/quran/2/255 → /l/#s/quran/2/255.
+  var sv = p.match(/^\/s\/((?:quran|hadith|books|ocr|speech|background|video|pdf)(?:\/[1-9][0-9]{0,9}){0,2})\/?$/);
+  if (sv) {
+    location.replace('/l/#s/' + sv[1]);
+  } else if (m) {
     // The channel handle's = is kept as is (`#c/@akhbar=7k2qmzt`).
     location.replace('/l/#' + (m[1] ? 'c/' : '') + '@' + encodeURIComponent(m[2]).replace(/%3D/gi, '='));
   } else {
