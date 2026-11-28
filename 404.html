@@ -2,22 +2,44 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<title>وصل</title>
+<title>وصل · Wasl</title>
+<link rel="icon" type="image/png" href="/l/icon.png">
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f5; --card: #ffffff; --text: #1b1f1d; --muted: #5c6661; --accent: #0f7a5c; --on-accent: #ffffff; --line: #dfe4e1; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #101412; --card: #1a201d; --text: #e8ece9; --muted: #a3ada8; --accent: #4fc79f; --on-accent: #06261b; --line: #2b332f; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  main { width: 100%; max-width: 440px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 28px 24px; }
+  .mark { font-size: 44px; font-weight: 700; color: var(--accent); text-align: center; margin: 0 0 4px; }
+  h1 { font-size: 20px; margin: 8px 0 4px; text-align: center; }
+  p { margin: 8px 0; color: var(--muted); }
+  .en { direction: ltr; text-align: left; }
+  .open { display: block; width: 100%; margin: 20px 0 8px; padding: 14px 16px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 700; text-align: center; text-decoration: none; }
+  [hidden] { display: none !important; }
+</style>
 <script>
-// Short public links: /s/<tool>[/<n>[/<n>]] (a service's link), /@name (a gold-star account) and /c/@name=code (a
-// public channel; /c/@name for a verified one's clean name) open the link page with the same fragment. Nothing is sent
-// anywhere: the name moves from the path into the #fragment, which the
-// browser never sends to a server.
+// Short public links. /s/<tool>[/<n>[/<n>]] (a service's link: an ayah, a
+// hadith, a book's page, or the service) is offered here, at its own
+// address (the owner, 28 Nov 2026: no other form shown). /@name (a
+// gold-star account) and /c/@name=code (a public channel; /c/@name for a
+// verified one's clean name) open the link page with the same fragment,
+// which the browser never sends to a server.
 (function () {
   var p = location.pathname;
   try { p = decodeURIComponent(p); } catch (e) {}
-  var m = p.match(/^\/(c\/)?@([^\/?#]{1,64})\/?$/);
-  // A service's link (the owner, 28 Nov 2026): /s/quran/2/255 → /l/#s/quran/2/255.
   var sv = p.match(/^\/s\/((?:quran|hadith|books|ocr|speech|background|video|pdf)(?:\/[1-9][0-9]{0,9}){0,2})\/?$/);
   if (sv) {
-    location.replace('/l/#s/' + sv[1]);
-  } else if (m) {
+    window.waslService = 'wasl://s/' + sv[1];
+    return;
+  }
+  var m = p.match(/^\/(c\/)?@([^\/?#]{1,64})\/?$/);
+  if (m) {
     // The channel handle's = is kept as is (`#c/@akhbar=7k2qmzt`).
     location.replace('/l/#' + (m[1] ? 'c/' : '') + '@' + encodeURIComponent(m[2]).replace(/%3D/gi, '='));
   } else {
@@ -26,5 +48,22 @@
 })();
 </script>
 </head>
-<body></body>
+<body>
+<main>
+  <div class="card" id="service" hidden>
+    <p class="mark" aria-hidden="true">وصل</p>
+    <h1>فتح في وصل</h1>
+    <p>رابط خدمة في وصل: آية، أو حديث، أو صفحة من كتاب، أو الخدمة نفسها. لا يُطلب شيء من الشبكة قبل تنبيه خصوصية الخدمة.</p>
+    <p class="en">A link to a Wasl service: an ayah, a hadith, a book's page, or the service itself.</p>
+    <a class="open" id="open" href="#">فتح في وصل · Open in Wasl</a>
+  </div>
+</main>
+<script>
+(function () {
+  if (!window.waslService) return;
+  document.getElementById('open').setAttribute('href', window.waslService);
+  document.getElementById('service').hidden = false;
+})();
+</script>
+</body>
 </html>
